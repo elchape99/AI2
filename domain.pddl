@@ -6,9 +6,9 @@
 (:types ;todo: enumerate types and their hierarchy here, e.g. car truck bus - vehicle
     rover
     location
-    maniupulator
+    manipulator
     man_pose
-    sensors
+    sensor
 )
 
 ; un-comment following line if constants are needed
@@ -17,11 +17,13 @@
 (:predicates ;todo: define predicates here
     (at ?r - rover ?l - location) ; is the rover r at location l
     (connected ?l1 ?l2 - location) ; is location l1 connected to location l2
-    (unstable ?l - location) ; is location l unstable?
-    (tack ?r - rover ?m - maniupulator) ; is maniupulator m attached to rover r
-    (has_man ?r - rover ?m - maniupulator) ; does rover r have maniup
-    (has_sensor ?r - rover ?s - sensors) ; does rover r have sensor s
+    (unstable ?r - rover) ; is rover r unstable?
+    (tack ?r - rover ?m - manipulator) ; is maniupulator m attached to rover r
+    (has_man ?r - rover ?m - manipulator) ; does rover r have maniup
+    (has_sensor ?r - rover ?s - sensor) ; does rover r have sensor s
     (at_pose ?m - maniupulator ?mp - man_pose) ; is maniupulator m at pose mp 
+    (sensor_active ?s - sensor) ; is sensor s active
+    (information_acquired ?s - sensor); has sensor s acquired information
 
 )
 
@@ -32,6 +34,8 @@
     :precondition (and
         (at ?r ?from)
         (connected ?from ?to)
+        ;(unstable ?r) ; the rover must be unstable to move
+        ;(tack ?r ?m) ; the manipulator must be retracted to move, PROBLEM: we should do a for loop over all manipulators
     )
 
     :effect (and
@@ -41,19 +45,29 @@
     )
 
 
-(:action stabilize; action for stabilize the robot ina  certain location)
-    :parameters (?r - rover ?l - location)
+;(:action stabilize; action for stabilize the robot in a  certain location)
+;    :parameters (?r - rover ?l - location)
+;    :precondition (and 
+;        (at ?r ?l)
+;        (unstable ?l)
+;    )
+;    :effect (and 
+;        (not(unstable ?l))
+;    )
+;)
+
+(:action stabilize ; action for stabilize the robot)
+    :parameters (?r - rover)
     :precondition (and 
-        (at ?r ?l)
-        (unstable ?l)
+        (unstable ?r)
     )
     :effect (and 
-        (not(unstable ?l))
+        (not(unstable ?r))
     )
 )
 
-(:action untack ; (sganciare) elongate a maniupulator out of the main rover chassis
-    :parameters (?r - rover ?m - maniupulator)
+(:action untack ; (sganciare) elongate a manipulator out of the main rover chassis
+    :parameters (?r - rover ?m - manipulator)
 
     :precondition (and  
         (tack ?r ?m)
@@ -64,13 +78,64 @@
     )
 )
 
-(:action set_manipulator
-    :parameters (?r - rover ?m - maniupulator ?init ?final - man_pose)
+;;;;;;;;;; NEW ACTIONS ;;;;;;;;;;;;;;
+
+(:action set_manipulator ; position the manipulator E-E in a certain pose 
+    :parameters (?r - rover ?m - manipulator ?init ?final - man_pose)
     :precondition (and 
+        (has_man ?r ?m)
+        (at_pose ?m ?init)
         
      )
-    :effect (and )
+    :effect (and 
+        (not (at_pose ?m ?init))
+        (at_pose ?m ?final)
+    )
 )
+
+(:action tack ; (agganciare) retract a maniupulator into the main rover chassis
+    :parameters (?r - rover ?m - manipulator)
+    :precondition (and 
+        (not(tack ?r ?m)) ; NEG precond
+        (has_man ?r ?m)
+    )
+    :effect (and (tack ?r ?m))
+)
+
+(:action activate_sensor ; activate a sensor
+    :parameters (?r - rover ?s - sensor)
+    :precondition (and 
+        (has_sensor ?r ?s)
+        (not(sensor_active ?s))
+    )
+    :effect (and (sensor_active ?s))
+)
+
+(:action deactivate_sensor ; deactivate a sensor
+    :parameters (?r - rover ?s - sensor)
+    :precondition (and 
+        (has_sensor ?r ?s)
+        (sensor_active ?s)
+    )
+    :effect (and (not (sensor_active ?s)))
+)
+
+
+(:action aquire_information ; acquire information from a sensor ;TODO: REVIEW this action
+    :parameters (?r - rover ?s - sensor ?l - location)
+    :precondition (and 
+        (at ?r ?l)
+        (has_sensor ?r ?s)
+        (sensor_active ?s)
+        (not(unstable ?r))
+        (not(information_acquired ?s))
+    )
+    :effect (and 
+        (information_acquired ?s)
+    )
+)
+
+
 
 
 

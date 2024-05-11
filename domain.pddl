@@ -1,7 +1,7 @@
 ;Header and description
 
 (define (domain mars_rover)
-(:requirements :strips :fluents :durative-actions :timed-initial-literals :typing :conditional-effects :negative-preconditions :duration-inequalities :equality)
+(:requirements :strips :fluents :durative-actions :timed-initial-literals :typing :conditional-effects :negative-preconditions :duration-inequalities :equality :time)
 
 (:types ;todo: enumerate types and their hierarchy here, e.g. car truck bus - vehicle
     rover
@@ -10,6 +10,8 @@
     spectrometer camera radar - sensor
     ;man_pose
     counter
+    planet
+    angle
 )
 
 ; un-comment following line if constants are needed
@@ -26,11 +28,13 @@
     (sensor_active ?s - sensor) ; is sensor s active
     (information_acquired ?s - sensor); has sensor s acquired information
     (analysis_performed ?r - rover ?s - sensor) ; has rover r performed analysis on sensor s
+    (aligned ?p1 - planet ?p2 - planet) ; are planets p1 and p2 aligned
 
 )
 
 (:functions
     (count ?s - sensor ?l - location) ; Count of data collections for each sensor in each location
+    (angle ?p1 - planet ?p2 - planet) ; angle between two planet
 )
 
 
@@ -160,6 +164,30 @@
 
 
 ;---------------- Data transmission ------------------
+
+(:event align
+    :parameters (?m - planet ?e - planet)
+    :precondition (and
+        (<= (angle ?m ?e) 20) 
+    )
+    :effect (and
+        (aligned ?m ?e)
+    )
+)
+
+;; a = 1,496 * 10^11 b = 1,4958 * 10^11
+
+(:process motion_earth
+    :parameters (?e - planet)
+    :precondition (and
+        ; activation condition
+    )
+    :effect (and
+        ; continuous effect(s)
+    )
+)
+
+
 
 (:action wait
     :parameters (?r - rover ?s - sensor)

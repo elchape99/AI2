@@ -8,8 +8,7 @@
     location man_pose - locus ;;;;;;;;;;;;
     manipulator
     spectrometer camera radar - sensor
-    ;man_pose
-    counter
+    ;counter
     planet
     angle
 )
@@ -18,17 +17,18 @@
 ;(:constants )
 
 (:predicates ;todo: define predicates here
-    (at ?r - rover ?l - location) ; is the rover r at location l
+    (at ?r - rover ?l - location) ; is the rover rP at location l
     (connected ?l1 ?l2 - location) ; is location l1 connected to location l2
     (unstable ?r - rover) ; is rover r unstable?
     (tack ?r - rover ?m - manipulator) ; is manipulator m attached to rover r
     (has_man ?r - rover ?m - manipulator) ; does rover r have maniup
     (has_sensor ?r - rover ?s - sensor) ; does rover r have sensor s
     (at_pose ?m - manipulator ?mp - man_pose) ; is manipulator m at pose mp 
-    (sensor_active ?s - sensor) ; is sensor s active
-    (information_acquired ?s - sensor); has sensor s acquired information
+    (sensor_active ?s - sensor) ; is manipulatorsensor s active
+    (information_acquired ?s - sensor ?mp - man_pose); has sensor s acquired information
     (analysis_performed ?r - rover ?s - sensor) ; has rover r performed analysis on sensor s
     (aligned ?p1 - planet ?p2 - planet) ; are planets p1 and p2 aligned
+    (data_sended ?r - rover)    ; has rover r send data
 
 )
 
@@ -128,21 +128,23 @@
 )
 
 
-;;;DO A DIFFERENT ACTION FOR EVERY SENSOR
+;;;DO A DIFFERENT ACTION FOR EVERY SENSOR for the parameter      
 (:action aquire_information
-    :parameters (?r - rover ?s - sensor ?l - location)
+    :parameters (?r - rover ?s - sensor ?l - location ?m - manipulator ?mp - man_pose)
     :precondition (and 
         (at ?r ?l)
         (has_sensor ?r ?s)
         (sensor_active ?s)
+        (not(tack ?r ?m)) ; Manipulator must be out to collect data, 
         (not(unstable ?r))
-        (not(information_acquired ?s))
+        (not(information_acquired ?s ?mp))
+        (at_pose ?m ?mp)
         (<= (count ?s ?l) 2) ; Assuming 2 collections required, adjust as needed
     )
     :effect (and 
         (increase (count ?s ?l) 1)
         (when (= (count ?s ?l) 2) ; Check if count has reached the required value CHECK IF CORRECT!!!!
-            (information_acquired ?s)
+            (information_acquired ?s ?mp)
         )
     )
 )
@@ -151,10 +153,10 @@
 ;---------------- Data processing ------------------
 
 (:action perform_analysis ; perform analysis on the acquired information
-    :parameters (?r - rover ?s - sensor) 
+    :parameters (?r - rover ?s - sensor ?mp - man_pose) 
     :precondition (and 
         (has_sensor ?r ?s)
-        (information_acquired ?s)
+        (information_acquired ?s ?mp)
         (not(analysis_performed ?r ?s))
     )
     :effect (and 
@@ -168,7 +170,11 @@
 (:event align
     :parameters (?m - planet ?e - planet)
     :precondition (and
-        (<= (angle ?m ?e) 20) 
+        (or
+            (<= (angle ?m ?e) 20)
+            (<= (angle ?e ?m) 20) 
+            
+        )
     )
     :effect (and
         (aligned ?m ?e)
@@ -177,32 +183,34 @@
 
 ;; a = 1,496 * 10^11 b = 1,4958 * 10^11
 
-(:process motion_earth
-    :parameters (?e - planet)
-    :precondition (and
-        ; activation condition
-    )
-    :effect (and
-        ; continuous effect(s)
-    )
-)
+;(:process motion_earth
+;    :parameters (?e - planet)
+;    :precondition (and
+;        ; activation condition
+;    )
+;    :effect (and
+;        ; continuous effect(s)
+;    )
+;)
 
 
 
-(:action wait
-    :parameters (?r - rover ?s - sensor)
-    :precondition (and 
-        (has_sensor ?r ?s)
-        (analysis_performed ?r ?s)
-    )
-    :effect (and )
-)
+;(:action wait
+;    :parameters (?r - rover ?s - sensor)
+;    :precondition (and 
+;        (has_sensor ?r ?s)
+;        (analysis_performed ?r ?s)
+;    )
+;    :effect (and )
+;)
 
 
 (:action send_data
-    :parameters (?r - rover )
-    :precondition (and )
-    :effect (and )
+    :parameters (?r - rover ?s - sensor)
+    :precondition (and (not(data_sended ?r))
+                        (analysis_performed ?r ?s)
+    )
+    :effect (and (data_sended ?r))
 )
 
 

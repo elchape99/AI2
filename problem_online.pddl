@@ -49,6 +49,15 @@
 (:goal (and
     ;todo: put the goal condition here
     (communication_closed MR1 mountain camera fully)
+    ;(at MR1 valley)
+    ;(at_pose gripper retracted)
+    ;(at MR1 mountain)
+    ;(information_acquired camera fully desert)
+    ;(analysis_performed MR1 camera desert fully)
+    ;(data_sended MR1 desert camera fully)
+    ;(data_sended MR1 mountain valley halfway)
+    (communication_closed MR1 valley radar halfway)
+
     
     )
 )

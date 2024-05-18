@@ -64,14 +64,16 @@
     )
 
 
-(:action stabilize ; action for stabilize the robot
+(:action stabilize ; action for stabilize the rover (idea: the rover elongate some arms to stabilize itself)
     :parameters (?r - rover)
-    :precondition (and 
-        (unstable ?r)
-    )
-    :effect (and 
-        (not(unstable ?r))
-    )
+    :precondition (unstable ?r)
+    :effect  (not(unstable ?r))
+)
+
+(:action unstabilize ; action for unstabilize the rover
+    :parameters(?r - rover)
+    :precondition(not(unstable ?r))
+    :effect(unstable ?r)
 )
 
 ;--------- Deployment of Scientfic Instruments ---------
@@ -106,7 +108,7 @@
 
 
 ; PROBLEM: before tack the manipulator the rover should set the manipulator in a certain pose (retracted)
-(:action tack ; retract a manipulator into the main rover chassis
+(:action tack ; retract a manipulator into the main rover chassis (solution: this action include the retraction of th arm)
     :parameters (?r - rover ?m - manipulator)
     :precondition (and 
         (not(tack ?r ?m)) ; NEG precond
@@ -167,7 +169,7 @@
         (at ?r ?l)
         (has_sensor ?r ?c)
         (sensor_active ?c)
-        (not(tack ?r ?m)) ; Manipulator must be out to collect data, 
+        (not(tack ?r ?m)) ; Manipulator must be out to collect data 
         (not(unstable ?r))
         (not(information_acquired ?c ?mp ?l))
         (at_pose ?m ?mp)
@@ -184,7 +186,7 @@
         (at ?r ?l)
         (has_sensor ?r ?ra)
         (sensor_active ?ra) 
-        (not(tack ?r ?m)) ; Manipulator must be out to collect data, 
+        (not(tack ?r ?m)) 
         (not(unstable ?r))
         (not(information_acquired ?ra ?mp ?l))
         (at_pose ?m ?mp)
@@ -201,7 +203,7 @@
         (at ?r ?l)
         (has_sensor ?r ?s)
         (sensor_active ?s)
-        (not(tack ?r ?m)) ; Manipulator must be out to collect data, 
+        (not(tack ?r ?m))
         (not(unstable ?r))
         (not(information_acquired ?s ?mp ?l))
         (at_pose ?m ?mp)
@@ -294,6 +296,12 @@
 
 )
 
+;(:action prep_for_new_comm
+;    :parameters()
+;    :precondition(and)
+;    :effect(and)
+;
+;)
 
 )
 

@@ -27,7 +27,7 @@
     (at_pose ?m - manipulator ?mp - man_pose) ; is manipulator m at pose mp 
     (sensor_active ?s - sensor) ; is manipulatorsensor s active
     (information_acquired ?s - sensor ?mp - man_pose ?l - location); has sensor s acquired information
-    (analysis_performed ?r - rover ?s - sensor ?l - location) ;?mp - man_pose) ; has rover r performed analysis on sensor s (added mp)
+    (analysis_performed ?r - rover ?s - sensor ?l - location ?mp - man_pose) ; has rover r performed analysis on sensor s (added mp)
     (aligned ?p1 - planet ?p2 - planet) ; are planets p1 and p2 aligned
     (data_sended ?r - rover ?l - location ?s - sensor ?mp - man_pose)    ; has rover r send data
     (communication_available) ; is communication available
@@ -218,10 +218,10 @@
     :precondition (and 
         (has_sensor ?r ?s)
         (information_acquired ?s ?mp ?l)
-        (not(analysis_performed ?r ?s ?l));;?mp
+        (not(analysis_performed ?r ?s ?l ?mp));;?mp
     )
     :effect (and 
-        (analysis_performed ?r ?s ?l)
+        (analysis_performed ?r ?s ?l ?mp)
     )
 )
 
@@ -268,10 +268,11 @@
 )
 
 
+;PROBLEM: the rover must be at the location in which it aquire data in order to send data?
 (:action send_data
     :parameters (?r - rover ?s - sensor ?mp - man_pose ?l - location)
     :precondition (and (not(data_sended ?r ?l ?s ?mp))
-                        (analysis_performed ?r ?s ?l)
+                        (analysis_performed ?r ?s ?l ?mp)
                         (communication_available)
     )
     :effect (and (data_sended ?r ?l ?s ?mp)

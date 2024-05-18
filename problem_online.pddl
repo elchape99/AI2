@@ -48,8 +48,8 @@
 
 (:goal (and
     ;todo: put the goal condition here
+    (communication_closed MR1 mountain camera fully)
     
-        (communication_closed MR1 mountain camera fully)
     )
 )
 

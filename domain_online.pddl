@@ -229,6 +229,7 @@
         (has_sensor ?r ?s)
         (information_acquired ?s ?l)
         (not(analysis_performed ?r ?s ?l))
+        (not (sensor_active ?s))
         (tack ?r ?m)
     )
     :effect (and 
@@ -279,7 +280,9 @@
         (home ?r ?l)
         (at ?r ?l)
     )
-    :effect (and (communication_available))
+    :effect (and (communication_available)
+             (not(ok))
+    )
 )
 
 
@@ -295,6 +298,7 @@
                    
     )
     :effect (and (data_sended ?r ?s ?l)
+    (not (communication_available))
     )
 )
 

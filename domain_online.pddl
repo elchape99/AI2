@@ -1,7 +1,7 @@
 ;Header and description
 
 (define (domain mars_rover)
-(:requirements :strips :fluents :typing :conditional-effects :negative-preconditions :equality)
+(:requirements :strips :typing :conditional-effects :negative-preconditions :equality)
 
 (:types ;todo: enumerate types and their hierarchy here, e.g. car truck bus - vehicle
     rover
@@ -22,18 +22,21 @@
     (connected ?l1 ?l2 - location) ; is location l1 connected to location l2
     (unstable ?r - rover) ; is rover r unstable?
     (tack ?r - rover ?m - manipulator) ; is manipulator m attached to rover r
+    (ready_to_tack ?r - rover ?mp - man_pose)   ; is the manipulator ready to be tacked
     (has_man ?r - rover ?m - manipulator) ; does rover r have maniup
     (has_sensor ?r - rover ?s - sensor) ; does rover r have sensor s
     (at_pose ?m - manipulator ?mp - man_pose) ; is manipulator m at pose mp 
+    ;(pose ?mp1 ?mp2 -man_pose)
     (sensor_active ?s - sensor) ; is manipulatorsensor s active
-    (information_acquired ?s - sensor ?mp - man_pose ?l - location); has sensor s acquired information
-    (analysis_performed ?r - rover ?s - sensor ?l - location ?mp - man_pose) ; has rover r performed analysis on sensor s (added mp)
+    (information_acquired ?s - sensor ?l - location); has sensor s acquired information
+    (analysis_performed ?r - rover ?s - sensor ?l - location) ; has rover r performed analysis on sensor s (added mp)
     (aligned ?p1 - planet ?p2 - planet) ; are planets p1 and p2 aligned
-    (data_sended ?r - rover ?l - location ?s - sensor ?mp - man_pose)    ; has rover r send data
+    (data_sended ?r - rover ?s - sensor ?l -location)    ; has rover r send data
     (communication_available) ; is communication available
-    (communication_closed ?r - rover ?l - location ?s - sensor ?mp - man_pose)
-    (sensor_pose ?r ?s ?mp) ; how should man pose to use a sensor
-
+    (communication_closed ?r - rover ?l - location ?s - sensor )
+    (sensor_pose ?s - sensor ?mp - man_pose)
+    (home ?r - rover ?l -location)
+    (ok)
 )
 
 
@@ -109,10 +112,12 @@
 
 ; PROBLEM: before tack the manipulator the rover should set the manipulator in a certain pose (retracted)
 (:action tack ; retract a manipulator into the main rover chassis (solution: this action include the retraction of th arm)
-    :parameters (?r - rover ?m - manipulator)
+    :parameters (?r - rover ?m - manipulator ?mp - man_pose)
     :precondition (and 
         (not(tack ?r ?m)) ; NEG precond
         (has_man ?r ?m)
+        (ready_to_tack ?r ?mp)
+        (at_pose ?m ?mp)
     )
     :effect (and (tack ?r ?m))
 )
@@ -128,6 +133,8 @@
     )
     :effect (and (sensor_active ?s))
 )
+
+
 
 (:action deactivate_sensor ; deactivate a sensor
     :parameters (?r - rover ?s - sensor)
@@ -149,7 +156,7 @@
 ;        (sensor_active ?s)
 ;        (not(tack ?r ?m)) ; Manipulator must be out to collect data, 
 ;        (not(unstable ?r))
-;        (not(information_acquired ?s ?mp ?l))
+;        (not(information_acquired ?s ?l))
 ;        (at_pose ?m ?mp)
 ;        
 ;        (<= (count ?s ?l) 2) ; Assuming 2 collections required, adjust as needed
@@ -157,42 +164,43 @@
 ;    :effect (and 
 ;        (increase (count ?s ?l) 1) ; every time the action is performed increase the counter (does not work)
 ;        (when (= (count ?s ?l) 2) ; Check if count has reached the required value 
-;            (information_acquired ?s ?mp ?l)
+;            (information_acquired ?s ?l)
 ;        )
 ;    )
 ;)
 
 ;Camera
 (:action aquire_camera_info
-    :parameters (?r - rover ?c - camera ?l - location ?m - manipulator ?mp - man_pose)
+    :parameters (?r - rover ?m - manipulator ?c - camera ?l - location ?mp - man_pose)
     :precondition (and 
         (at ?r ?l)
         (has_sensor ?r ?c)
         (sensor_active ?c)
-        (not(tack ?r ?m)) ; Manipulator must be out to collect data 
         (not(unstable ?r))
-        (not(information_acquired ?c ?mp ?l))
+        (not(information_acquired ?c ?l))
+        (sensor_pose ?c ?mp)
         (at_pose ?m ?mp)
-    )
+       )
     :effect (and 
-            (information_acquired ?c ?mp ?l)
+            (information_acquired ?c ?l)
     )
 )
 
 ;radar
 (:action aquire_radar_info
-    :parameters (?r - rover ?ra - radar ?l - location ?m - manipulator ?mp - man_pose)
+    :parameters (?r - rover ?m - manipulator ?ra - radar ?l - location ?mp - man_pose)
     :precondition (and 
         (at ?r ?l)
         (has_sensor ?r ?ra)
         (sensor_active ?ra) 
-        (not(tack ?r ?m)) 
         (not(unstable ?r))
-        (not(information_acquired ?ra ?mp ?l))
+        (not(information_acquired ?ra ?l))
+        (sensor_pose ?ra ?mp)
         (at_pose ?m ?mp)
+        (not(tack ?r ?m))
     )
     :effect (and 
-            (information_acquired ?ra ?mp ?l)
+            (information_acquired ?ra ?l)
     )
 )
 
@@ -200,30 +208,32 @@
 (:action aquire_spectrometer_info
     :parameters (?r - rover ?s - spectrometer ?l - location ?m - manipulator ?mp - man_pose)
     :precondition (and 
-        (at ?r ?l)
+          (at ?r ?l)
         (has_sensor ?r ?s)
-        (sensor_active ?s)
-        (not(tack ?r ?m))
+        (sensor_active ?s) 
         (not(unstable ?r))
-        (not(information_acquired ?s ?mp ?l))
+        (not(information_acquired ?s ?l))
+        (sensor_pose ?s ?mp)
         (at_pose ?m ?mp)
     )
     :effect (and 
-            (information_acquired ?s ?mp ?l)
+            (information_acquired ?s ?l)
     )
 )
 
 ;---------------- Data processing ------------------
 
 (:action perform_analysis ; perform analysis on the acquired information
-    :parameters (?r - rover ?s - sensor ?mp - man_pose ?l - location) 
+    :parameters (?r - rover ?m - manipulator ?s - sensor ?l - location ) 
     :precondition (and 
         (has_sensor ?r ?s)
-        (information_acquired ?s ?mp ?l)
-        (not(analysis_performed ?r ?s ?l ?mp));;?mp
+        (information_acquired ?s ?l)
+        (not(analysis_performed ?r ?s ?l))
+        (tack ?r ?m)
     )
     :effect (and 
-        (analysis_performed ?r ?s ?l ?mp)
+        (analysis_performed ?r ?s ?l)
+        (ok)
     )
 )
 
@@ -262,9 +272,12 @@
 
 
 (:action wait_for_comm
-    :parameters (?r - rover)
+    :parameters (?r - rover ?l -location)
     :precondition (and 
         (not(communication_available))
+        (ok)
+        (home ?r ?l)
+        (at ?r ?l)
     )
     :effect (and (communication_available))
 )
@@ -272,25 +285,29 @@
 
 ;PROBLEM: the rover must be at the location in which it aquire data in order to send data?
 (:action send_data
-    :parameters (?r - rover ?s - sensor ?mp - man_pose ?l - location)
-    :precondition (and (not(data_sended ?r ?l ?s ?mp))
-                        (analysis_performed ?r ?s ?l ?mp)
+    :parameters (?r - rover ?s - sensor ?l ?l2 - location)
+    :precondition (and (not(data_sended ?r ?s ?l))
+                        (analysis_performed ?r ?s ?l)
                         (communication_available)
+                        (home ?r ?l2)
+                        (at ?r ?l2)
+
+                   
     )
-    :effect (and (data_sended ?r ?l ?s ?mp)
+    :effect (and (data_sended ?r ?s ?l)
     )
 )
 
 
 (:action close_comm
-    :parameters(?r -rover ?s -sensor ?mp - man_pose ?l - location ?m - manipulator)
-    :precondition(and (data_sended ?r ?l ?s ?mp)
-                    (not(communication_closed ?r ?l ?s ?mp))
+    :parameters(?r -rover ?s -sensor ?l - location ?m - manipulator)
+    :precondition(and (data_sended ?r ?s ?l)
+                    (not(communication_closed ?r ?l ?s))
                     )
     
     :effect(and
             (not(communication_available))
-            (communication_closed ?r ?l ?s ?mp)
+            (communication_closed ?r ?l ?s)
             
     )
 

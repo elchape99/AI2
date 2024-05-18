@@ -1,0 +1,4 @@
+{
+    "pddlParser.executableOrService": "c:/Users/andre/AppData/Roaming/Code/User/globalStorage/jan-dolejsi.pddl/val/Val-20210401.1-win64/bin/Parser.exe",
+    "pddlParser.executableOptions": "$(domain) $(problem)"
+}

@@ -26,17 +26,24 @@
     (has_man ?r - rover ?m - manipulator) ; does rover r have maniup
     (has_sensor ?r - rover ?s - sensor) ; does rover r have sensor s
     (at_pose ?m - manipulator ?mp - man_pose) ; is manipulator m at pose mp 
-    ;(pose ?mp1 ?mp2 -man_pose)
     (sensor_active ?s - sensor) ; is manipulatorsensor s active
-    (information_acquired ?s - sensor ?l - location); has sensor s acquired information
-    (analysis_performed ?r - rover ?s - sensor ?l - location) ; has rover r performed analysis on sensor s (added mp)
+    (information_acquired ?s - sensor) ;?l - location); has sensor s acquired information
+    (analysis_performed ?r - rover ?s - sensor) ;?l - location) ; has rover r performed analysis on sensor s (added mp)
     (aligned ?p1 - planet ?p2 - planet) ; are planets p1 and p2 aligned
-    (data_sended ?r - rover ?s - sensor ?l -location)    ; has rover r send data
+    (data_sended ?r - rover ?s - sensor) ;?l -location)    ; has rover r send data
     (communication_available) ; is communication available
-    (communication_closed ?r - rover ?l - location ?s - sensor )
-    (sensor_pose ?s - sensor ?mp - man_pose)
-    (home ?r - rover ?l -location)
+    (communication_closed ?r - rover ?s - sensor )
+    (sensor_pose ?s - sensor ?mp - man_pose) ; the sensor must be used with the manipulator in a certain position
+    (home ?r - rover ?l -location) ; true if the rover is at home
     (ok)
+    (at_camera ?c - camera ?l - location) ; camera must be used at location l
+    (at_spectrometer ?sp - spectrometer ?l - location) ; spectrometer must be used at location l
+    (at_radar ?r - radar ?l - location) ; radar must be used at location l
+    
+    (count_0 ?s - sensor) ; counters
+    (count_1 ?s - sensor)
+    (count_2 ?s - sensor)
+    (count_3 ?s - sensor)
 )
 
 
@@ -57,7 +64,10 @@
         (at ?r ?from)
         (connected ?from ?to)
         (unstable ?r) ; the rover must be unstable to move
-        (tack ?r ?m) ; the manipulator must be retracted to move, PROBLEM: we should do a for loop over all manipulators
+        ;(forall (?m - manipulator)
+            (tack ?r ?m) ; the manipulator must be retracted to move, PROBLEM: we should do a for loop over all manipulators
+        ;)
+        
     )
 
     :effect (and
@@ -173,16 +183,20 @@
 (:action aquire_camera_info
     :parameters (?r - rover ?m - manipulator ?c - camera ?l - location ?mp - man_pose)
     :precondition (and 
+        (at_camera ?c ?l)
         (at ?r ?l)
         (has_sensor ?r ?c)
         (sensor_active ?c)
         (not(unstable ?r))
-        (not(information_acquired ?c ?l))
+        (not(information_acquired ?c))
         (sensor_pose ?c ?mp)
         (at_pose ?m ?mp)
+        (or (count_0 ?c) (count_1 ?c) (count_2 ?c))
        )
     :effect (and 
-            (information_acquired ?c ?l)
+            (when (count_0 ?c) (and (not (count_0 ?c)) (count_1 ?c)))
+            (when (count_1 ?c) (and (not (count_1 ?c)) (count_2 ?c)))
+            (when (count_2 ?c) (and (not (count_2 ?c)) (count_3 ?c) (information_acquired ?c)))
     )
 )
 
@@ -190,17 +204,18 @@
 (:action aquire_radar_info
     :parameters (?r - rover ?m - manipulator ?ra - radar ?l - location ?mp - man_pose)
     :precondition (and 
+        (at_radar ?ra ?l)
         (at ?r ?l)
         (has_sensor ?r ?ra)
         (sensor_active ?ra) 
         (not(unstable ?r))
-        (not(information_acquired ?ra ?l))
+        (not(information_acquired ?ra))
         (sensor_pose ?ra ?mp)
         (at_pose ?m ?mp)
         (not(tack ?r ?m))
     )
     :effect (and 
-            (information_acquired ?ra ?l)
+            (information_acquired ?ra)
     )
 )
 
@@ -208,16 +223,17 @@
 (:action aquire_spectrometer_info
     :parameters (?r - rover ?s - spectrometer ?l - location ?m - manipulator ?mp - man_pose)
     :precondition (and 
-          (at ?r ?l)
+        (at_spectrometer ?s ?l)
+         (at ?r ?l)
         (has_sensor ?r ?s)
         (sensor_active ?s) 
         (not(unstable ?r))
-        (not(information_acquired ?s ?l))
+        (not(information_acquired ?s ))
         (sensor_pose ?s ?mp)
         (at_pose ?m ?mp)
     )
     :effect (and 
-            (information_acquired ?s ?l)
+            (information_acquired ?s)
     )
 )
 
@@ -227,13 +243,13 @@
     :parameters (?r - rover ?m - manipulator ?s - sensor ?l - location ) 
     :precondition (and 
         (has_sensor ?r ?s)
-        (information_acquired ?s ?l)
-        (not(analysis_performed ?r ?s ?l))
+        (information_acquired ?s)
+        (not(analysis_performed ?r ?s))
         (not (sensor_active ?s))
         (tack ?r ?m)
     )
     :effect (and 
-        (analysis_performed ?r ?s ?l)
+        (analysis_performed ?r ?s)
         (ok)
     )
 )
@@ -267,6 +283,8 @@
 ;    )
 ;    :effect (and
 ;        ; continuous effect(s)
+;               (increase (pos_e ?x) (* ) )  ; x += vx * delta_t
+;               (increase (pos_e ?y) (* ) )
 ;    )
 ;)
 
@@ -286,18 +304,18 @@
 )
 
 
-;PROBLEM: the rover must be at the location in which it aquire data in order to send data?
+
 (:action send_data
-    :parameters (?r - rover ?s - sensor ?l ?l2 - location)
-    :precondition (and (not(data_sended ?r ?s ?l))
-                        (analysis_performed ?r ?s ?l)
+    :parameters (?r - rover ?s - sensor ?l2 - location)
+    :precondition (and (not(data_sended ?r ?s))
+                        (analysis_performed ?r ?s)
                         (communication_available)
                         (home ?r ?l2)
                         (at ?r ?l2)
 
                    
     )
-    :effect (and (data_sended ?r ?s ?l)
+    :effect (and (data_sended ?r ?s)
     (not (communication_available))
     )
 )
@@ -305,28 +323,19 @@
 
 (:action close_comm
     :parameters(?r -rover ?s -sensor ?l - location ?m - manipulator)
-    :precondition(and (data_sended ?r ?s ?l)
-                    (not(communication_closed ?r ?l ?s))
+    :precondition(and (data_sended ?r ?s)
+                    (not(communication_closed ?r ?s))
+
                     )
     
     :effect(and
             (not(communication_available))
-            (communication_closed ?r ?l ?s)
+            (communication_closed ?r ?s)
             
     )
 
 )
 
-;(:action prep_for_new_comm
-;    :parameters()
-;    :precondition(and)
-;    :effect(and)
-;
-;)
+
 
 )
-
-
-
-
-

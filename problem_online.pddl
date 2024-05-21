@@ -45,6 +45,13 @@
 
     (home MR1 home) ; home location of the rover
     
+    (at_camera camera valley) ; camera must be used at the valley
+    (at_spectrometer spectrometer iceland) ; spectrometer must be used in the iceland
+    (at_radar radar mountain) ; radar must be used in the mountain
+    
+    
+    (count_0 camera)
+    
     (unstable MR1) 
 
     
@@ -62,8 +69,11 @@
     ;(information_acquired camera fully desert)
     ;(analysis_performed MR1 camera desert)
     ;(analysis_performed MR1 radar desert)
-    (data_sended MR1 camera desert)
-    (data_sended MR1 radar mountain)
+    ;(data_sended MR1 camera)
+    (communication_closed MR1 camera)
+    (communication_closed MR1 spectrometer)
+    (communication_closed MR1 radar)
+    ;(data_sended MR1 radar mountain)
     ;(communication_closed MR1 valley radar halfway)
 
     

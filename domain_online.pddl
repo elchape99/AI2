@@ -5,11 +5,9 @@
 
 (:types ;todo: enumerate types and their hierarchy here, e.g. car truck bus - vehicle
     rover
-    location man_pose - locus ;;;
-    ;man_pose
+    location man_pose - locus
     manipulator
     spectrometer camera radar - sensor
-    ;counter
     planet
     angle
 )
@@ -18,21 +16,21 @@
 ;(:constants )
 
 (:predicates ;todo: define predicates here
-    (at ?r - rover ?l - location) ; is the rover rP at location l
+    (at ?r - rover ?l - location) ; is the rover r at location l
     (connected ?l1 ?l2 - location) ; is location l1 connected to location l2
     (unstable ?r - rover) ; is rover r unstable?
     (tack ?r - rover ?m - manipulator) ; is manipulator m attached to rover r
     (ready_to_tack ?r - rover ?mp - man_pose)   ; is the manipulator ready to be tacked
-    (has_man ?r - rover ?m - manipulator) ; does rover r have maniup
+    (has_man ?r - rover ?m - manipulator) ; does rover r have manipulator m
     (has_sensor ?r - rover ?s - sensor) ; does rover r have sensor s
     (at_pose ?m - manipulator ?mp - man_pose) ; is manipulator m at pose mp 
-    (sensor_active ?s - sensor) ; is manipulatorsensor s active
-    (information_acquired ?s - sensor) ;?l - location); has sensor s acquired information
-    (analysis_performed ?r - rover ?s - sensor) ;?l - location) ; has rover r performed analysis on sensor s (added mp)
+    (sensor_active ?s - sensor) ; is sensor s active
+    (information_acquired ?s - sensor) ; has sensor s acquired information
+    (analysis_performed ?r - rover ?s - sensor) ; has rover r performed analysis on sensor s
     (aligned ?p1 - planet ?p2 - planet) ; are planets p1 and p2 aligned
-    (data_sended ?r - rover ?s - sensor) ;?l -location)    ; has rover r send data
+    (data_sended ?r - rover ?s - sensor) ; has rover r send data from sensor s 
     (communication_available) ; is communication available
-    (communication_closed ?r - rover ?s - sensor )
+    (communication_closed ?r - rover ?s - sensor ) ; is communication closed
     (sensor_pose ?s - sensor ?mp - man_pose) ; the sensor must be used with the manipulator in a certain position
     (home ?r - rover ?l -location) ; true if the rover is at home
     (ok)
@@ -51,6 +49,8 @@
 ;(:functions
 ;    (count ?s - sensor ?l - location) ; Count of data collections for each sensor in each location
 ;    (angle ?p1 - planet ?p2 - planet) ; angle between two planet
+;    (pos_x ?p - planet) ; x position of planet p
+;    (pos_y ?p - planet) ; y position of planet p
 ;)
 
 
@@ -65,7 +65,7 @@
         (connected ?from ?to)
         (unstable ?r) ; the rover must be unstable to move
         ;(forall (?m - manipulator)
-            (tack ?r ?m) ; the manipulator must be retracted to move, PROBLEM: we should do a for loop over all manipulators
+            (tack ?r ?m) ; the manipulator must be retracted to move, (problem: we should do a for loop over all man)
         ;)
         
     )
@@ -120,11 +120,11 @@
 )
 
 
-; PROBLEM: before tack the manipulator the rover should set the manipulator in a certain pose (retracted)
-(:action tack ; retract a manipulator into the main rover chassis (solution: this action include the retraction of th arm)
+; (PROBLEM: before tack the manipulator the rover should set the manipulator in a certain pose (retracted) )
+(:action tack ; retract a manipulator into the main rover chassis (solution: this action include the retraction of the arm)
     :parameters (?r - rover ?m - manipulator ?mp - man_pose)
     :precondition (and 
-        (not(tack ?r ?m)) ; NEG precond
+        (not(tack ?r ?m))
         (has_man ?r ?m)
         (ready_to_tack ?r ?mp)
         (at_pose ?m ?mp)
@@ -183,13 +183,13 @@
 (:action aquire_camera_info
     :parameters (?r - rover ?m - manipulator ?c - camera ?l - location ?mp - man_pose)
     :precondition (and 
-        (at_camera ?c ?l)
+        (at_camera ?c ?l) ; location where acquire data with camera
         (at ?r ?l)
         (has_sensor ?r ?c)
         (sensor_active ?c)
         (not(unstable ?r))
         (not(information_acquired ?c))
-        (sensor_pose ?c ?mp)
+        (sensor_pose ?c ?mp) ; manipulator must be in a certain pose to use the camera properly
         (at_pose ?m ?mp)
         (or (count_0 ?c) (count_1 ?c) (count_2 ?c))
        )
@@ -263,14 +263,21 @@
 ;IDEA: make a process that moves the earth and mars, and then check if they are aligned
 
 ;    (:event align
-;        :parameters (?m - planet ?e - planet)
+;        :parameters (?e - planet ?m - planet)
 ;         :precondition (and
 ;            (or
-;                (<= (angle ?m ?e) 20)
-;                (<= (angle ?e ?m) 20) 
+;                (and
+;                    (<= ( decrease( pos_x ?e) (pos_x ?m) ) 10)  ; (x_e - x_m) <= 10
+;                    (<= (decrease( pos_y ?e) (pos_y ?e)) 10)    ; (y_e - y_m) <= 10
+;                 )
+;                
+;                (and
+;                    (<= (decrease( pos_x ?m) (pos_x ?e)) 10)
+;                    (<= (decrease( pos_y ?m) (pos_y ?e)) 10)
+;                 )                
 ;                
 ;            )
-;        )
+;     
 ;        :effect (and
 ;            (aligned ?m ?e)
 ;        )
@@ -282,9 +289,11 @@
 ;        ; activation condition
 ;    )
 ;    :effect (and
-;        ; continuous effect(s)
-;               (increase (pos_e ?x) (* ) )  ; x += vx * delta_t
-;               (increase (pos_e ?y) (* ) )
+;        ; continuous effect(s)               
+;               (assign (time ?delta_t) (#t - t))
+;               (increase (pos_x ?e) (* ) )  ; x += vx * delta_t 
+;               (increase (pos_y ?e) (* ) ) ; y += vy * delta_t
+;               (assign (time ?t) (#t))
 ;    )
 ;)
 
@@ -295,7 +304,7 @@
     :precondition (and 
         (not(communication_available))
         (ok)
-        (home ?r ?l)
+        (home ?r ?l) ; r must be at home
         (at ?r ?l)
     )
     :effect (and (communication_available)

@@ -31,14 +31,15 @@
     (connected mountain iceland)
     (connected iceland mountain)
 
-    (sensor_pose camera fully)
+    (sensor_pose camera fully) ; positions of the manipulator to use the sensor
     (sensor_pose radar retracted)
     (sensor_pose spectrometer halfway)
     
     (has_man MR1 gripper)
-    (at_pose gripper retracted) ; gripper is retracted
+    (at_pose gripper retracted) ; initially gripper is retracted
     (tack MR1 gripper) ; gripper is attached
-    (ready_to_tack MR1 retracted) ; gripper is ready to
+    (ready_to_tack MR1 retracted) ; gripper is ready to tack if manipulator is retracted
+
     (has_sensor MR1 spectrometer) ; sensors
     (has_sensor MR1 camera)
     (has_sensor MR1 radar)
@@ -50,9 +51,9 @@
     (at_radar radar mountain) ; radar must be used in the mountain
     
     
-    (count_0 camera)
+    (count_0 camera) ; initialization of the counter for the camera
     
-    (unstable MR1) 
+    (unstable MR1) ; initially rover is unstable 
 
     
     
@@ -60,21 +61,10 @@
 )
 
 (:goal (and
-    ;todo: put the goal condition here
-    ;(information_acquired camera mountain)
-    ;(communication_closed MR1 mountain camera fully)
-    ;(at MR1 valley)
-    ;(at_pose gripper retracted)
-    ;(at MR1 mountain)
-    ;(information_acquired camera fully desert)
-    ;(analysis_performed MR1 camera desert)
-    ;(analysis_performed MR1 radar desert)
-    ;(data_sended MR1 camera)
+
     (communication_closed MR1 camera)
     (communication_closed MR1 spectrometer)
     (communication_closed MR1 radar)
-    ;(data_sended MR1 radar mountain)
-    ;(communication_closed MR1 valley radar halfway)
 
     
     )
